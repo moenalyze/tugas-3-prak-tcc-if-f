@@ -5,26 +5,32 @@ function App() {
   const [judul, setJudul] = useState('');
   const [isi, setIsi] = useState('');
   const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const API_URL = 'https://backend-053-729492539702.us-central1.run.app/notes';
+
+  // Ambil Data (View)
+  const fetchNotes = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setNotes(data);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchNotes();
   }, []);
 
-  const fetchNotes = async () => {
-    try {
-      const response = await fetch(API_URL);
-      const result = await response.json();
-      setNotes(result.data || result); 
-    } catch (error) {
-      console.error("Gagal mengambil data:", error);
-    }
-  };
-
-  const saveNote = async (e) => {
+  // Simpan Data (Create & Update)
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!judul || !isi) return alert("Judul dan isi harus diisi!");
+    if (!judul || !isi) return alert("Isi judul dan kontennya dulu!");
 
     const method = editId ? 'PUT' : 'POST';
     const url = editId ? `${API_URL}/${editId}` : API_URL;
@@ -35,74 +41,114 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ judul, isi })
       });
-      
       setJudul('');
       setIsi('');
       setEditId(null);
       fetchNotes();
-    } catch (error) {
-      console.error("Gagal menyimpan data:", error);
+    } catch (err) {
+      console.error("Error saving note:", err);
     }
   };
 
-  const editNote = (note) => {
+  // Hapus Data (Delete)
+  const deleteNote = async (id) => {
+    if (window.confirm("Yakin mau hapus catatan ini?")) {
+      try {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        fetchNotes();
+      } catch (err) {
+        console.error("Error deleting note:", err);
+      }
+    }
+  };
+
+  // Set Mode Edit
+  const startEdit = (note) => {
     setJudul(note.judul);
     setIsi(note.isi);
     setEditId(note.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const deleteNote = async (id) => {
-    if (!window.confirm("Yakin mau hapus catatan ini?")) return;
-    try {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      fetchNotes();
-    } catch (error) {
-      console.error("Gagal menghapus data:", error);
-    }
-  };
-
-  // Tampilan UI dengan styling CSS inline sederhana
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: '600px', margin: '40px auto', padding: '20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#333' }}>📝 CatatanKu (React Version)</h1>
-      
-      <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ddd' }}>
-        <form onSubmit={saveNote}>
-          <input 
-            type="text" 
-            placeholder="Judul Catatan" 
-            value={judul}
-            onChange={(e) => setJudul(e.target.value)}
-            style={{ width: '100%', padding: '10px', marginBottom: '10px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <textarea 
-            placeholder="Tulis isinya di sini..." 
-            value={isi}
-            onChange={(e) => setIsi(e.target.value)}
-            rows="4"
-            style={{ width: '100%', padding: '10px', marginBottom: '10px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid #ccc' }}
-          />
-          <button type="submit" style={{ background: '#0056b3', color: 'white', padding: '10px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>
-            {editId ? 'Update Catatan' : 'Simpan Catatan'}
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen py-10 px-4 md:px-0">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-blue-600 mb-2">My Cloud Notes</h1>
+          <p className="text-gray-500">Tugas 3 Praktikum TCC - Deployment App Engine & Cloud Run</p>
+        </header>
 
-      <div>
-        {notes.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#888' }}>Belum ada catatan.</p>
-        ) : (
-          notes.map(note => (
-            <div key={note.id} style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '10px', borderRadius: '8px' }}>
-              <h3 style={{ margin: '0 0 10px 0' }}>{note.judul}</h3>
-              <p style={{ margin: '0 0 15px 0', whiteSpace: 'pre-wrap' }}>{note.isi}</p>
-              <div>
-                <button onClick={() => editNote(note)} style={{ marginRight: '10px', background: '#ffc107', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
-                <button onClick={() => deleteNote(note.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Hapus</button>
-              </div>
+        {/* Form Section */}
+        <div className="bg-white shadow-lg rounded-xl p-6 mb-10 border-t-4 border-blue-500">
+          <h2 className="text-xl font-semibold mb-4 text-gray-700">
+            {editId ? '📝 Edit Catatan' : '➕ Tambah Catatan Baru'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Judul Catatan..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              value={judul}
+              onChange={(e) => setJudul(e.target.value)}
+            />
+            <textarea
+              placeholder="Tuliskan isi catatanmu di sini..."
+              rows="4"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              value={isi}
+              onChange={(e) => setIsi(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200"
+              >
+                {editId ? 'Perbarui Catatan' : 'Simpan ke Cloud'}
+              </button>
+              {editId && (
+                <button
+                  type="button"
+                  onClick={() => { setEditId(null); setJudul(''); setIsi(''); }}
+                  className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg"
+                >
+                  Batal
+                </button>
+              )}
             </div>
-          ))
-        )}
+          </form>
+        </div>
+
+        {/* List Notes Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {loading ? (
+            <div className="col-span-full text-center py-10 text-gray-500 italic">Mengambil data dari Cloud Run...</div>
+          ) : notes.length > 0 ? (
+            notes.map((note) => (
+              <div key={note.id} className="bg-white p-6 rounded-xl shadow hover:shadow-md transition border border-gray-100 flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2 truncate border-b pb-2">{note.judul}</h3>
+                  <p className="text-gray-600 text-sm mb-4 whitespace-pre-wrap">{note.isi}</p>
+                </div>
+                <div className="flex justify-end gap-3 mt-4">
+                  <button
+                    onClick={() => startEdit(note)}
+                    className="text-blue-500 hover:text-blue-700 font-semibold text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteNote(note.id)}
+                    className="text-red-500 hover:text-red-700 font-semibold text-sm"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10 text-gray-400">Database masih kosong, ayo buat catatan!</div>
+          )}
+        </div>
       </div>
     </div>
   );
