@@ -7,7 +7,7 @@ function App() {
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'https://backend-053-729492539702.us-central1.run.app/notes';
+  const API_URL = 'https://backend-053-729492539702.us-central1.run.app/api/v1/notes';
 
   // Ambil Data (View)
   const fetchNotes = async () => {
