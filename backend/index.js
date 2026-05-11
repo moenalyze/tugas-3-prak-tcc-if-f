@@ -68,5 +68,4 @@ app.delete('/notes/:id', (req, res) => {
     });
 });
 
-// Testing filter trigger CI/CD
 app.listen(5000, () => console.log('Server running on port 5000'));
