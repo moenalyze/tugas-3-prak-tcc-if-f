@@ -15,7 +15,7 @@ function App() {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      setNotes(data);
+      setNotes(data.data || []);
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
